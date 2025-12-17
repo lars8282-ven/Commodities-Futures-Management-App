@@ -11,7 +11,7 @@ import os
 # Add lib to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 
-from lib.auth import check_authentication, show_login_form
+from lib.auth import check_authentication
 from lib.db import get_db, save_futures_data, get_futures_data, data_exists_for_date, get_latest_scrape_date
 from lib.scraper import CMEScraper
 
@@ -23,10 +23,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Authentication check - restrict access to @tepuiv.com emails
+# Authentication check - restrict access to @tepuiv.com emails via OIDC
 if not check_authentication():
-    show_login_form()
-    st.stop()  # Stop execution if not authenticated
+    st.stop()  # Stop execution if not authenticated (login UI is shown by check_authentication)
 
 # Initialize session state
 if "db" not in st.session_state:

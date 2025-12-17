@@ -1,12 +1,15 @@
 """
 Authentication module for Streamlit app.
-Verifies user email domain to restrict access.
+Uses Streamlit's built-in OIDC authentication with email domain verification.
+Restricts access to @tepuiv.com email addresses.
 """
 import streamlit as st
-import re
 
 
-def verify_email_domain(email: str, allowed_domain: str = "@tepuiv.com") -> bool:
+ALLOWED_DOMAIN = "@tepuiv.com"
+
+
+def verify_email_domain(email: str, allowed_domain: str = ALLOWED_DOMAIN) -> bool:
     """
     Verify email belongs to allowed domain.
     
@@ -29,55 +32,84 @@ def verify_email_domain(email: str, allowed_domain: str = "@tepuiv.com") -> bool
 
 def check_authentication() -> bool:
     """
-    Check if user is authenticated with allowed email domain.
-    Uses session state to persist authentication.
+    Check if user is authenticated with allowed email domain using Streamlit OIDC.
+    
+    This function:
+    1. Checks if user is logged in via Streamlit's built-in OIDC (st.user)
+    2. Verifies the email domain is @tepuiv.com
+    3. Shows login button if not authenticated
+    4. Shows error if logged in with wrong domain
     
     Returns:
-        True if authenticated, False otherwise
+        True if authenticated with correct domain, False otherwise
     """
-    # Initialize session state
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    if "user_email" not in st.session_state:
-        st.session_state.user_email = None
+    # Check if user is logged in via Streamlit OIDC
+    if not st.user.is_logged_in:
+        # User is not logged in - show login button
+        st.title("🔐 Authentication Required")
+        st.markdown("This application is restricted to authorized users.")
+        st.info(f"Please log in with your {ALLOWED_DOMAIN} email address to continue.")
+        
+        # Try to detect if OIDC is configured
+        try:
+            # Show login button - this will redirect to OIDC provider
+            if st.button("🔑 Log in", type="primary"):
+                st.login()  # Redirects to OIDC provider
+            return False
+        except Exception as e:
+            # If OIDC is not configured, show helpful error
+            st.error("⚠️ Authentication is not configured properly.")
+            st.warning(
+                "To enable authentication, you need to configure OIDC in `.streamlit/secrets.toml`. "
+                "See the deployment guide for setup instructions."
+            )
+            st.code(
+                """
+# Example configuration for Microsoft/Azure AD:
+[auth]
+redirect_uri = "https://your-app-url.streamlit.app/oauth2callback"
+cookie_secret = "your-random-secret-here"
+
+[auth.microsoft]
+client_id = "your-client-id"
+client_secret = "your-client-secret"
+server_metadata_url = "https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration"
+                """,
+                language="toml"
+            )
+            return False
     
-    # Return True if already authenticated
-    if st.session_state.authenticated:
-        return True
+    # User is logged in - check email domain
+    user_email = st.user.get("email") or st.user.get("preferred_username") or ""
     
-    # Show login form
-    return False
+    if not user_email:
+        st.error("⚠️ Unable to retrieve email from authentication provider.")
+        st.info("Please contact your administrator if this issue persists.")
+        if st.button("🔓 Log out"):
+            st.logout()
+        return False
+    
+    # Verify email domain
+    if not verify_email_domain(user_email, ALLOWED_DOMAIN):
+        st.error(f"❌ Access Denied")
+        st.warning(
+            f"Your email address ({user_email}) is not authorized to access this application. "
+            f"Only {ALLOWED_DOMAIN} email addresses are permitted."
+        )
+        if st.button("🔓 Log out"):
+            st.logout()
+        return False
+    
+    # User is authenticated with correct domain
+    return True
 
 
 def show_login_form() -> bool:
     """
-    Display login form and handle authentication.
+    Deprecated: This function is kept for backwards compatibility.
+    Use check_authentication() instead, which handles OIDC authentication.
     
     Returns:
         True if user is authenticated, False otherwise
     """
-    st.title("🔐 Authentication Required")
-    st.markdown("This application is restricted to authorized users.")
-    st.info("Please enter your @tepuiv.com email address to continue.")
-    
-    with st.form("login_form"):
-        email = st.text_input(
-            "Email Address",
-            placeholder="your.name@tepuiv.com",
-            type="default"
-        )
-        
-        submit_button = st.form_submit_button("Login", type="primary")
-        
-        if submit_button:
-            if verify_email_domain(email):
-                st.session_state.authenticated = True
-                st.session_state.user_email = email
-                st.success(f"Authenticated as {email}")
-                st.rerun()
-            else:
-                st.error(f"Access denied. Only @tepuiv.com email addresses are authorized.")
-                return False
-    
-    return False
-
+    return check_authentication()
