@@ -90,3 +90,4 @@ jobs:
             *.log
             logs/
           retention-days: 7
+
