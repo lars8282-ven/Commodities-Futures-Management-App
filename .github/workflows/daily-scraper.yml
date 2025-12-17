@@ -21,15 +21,15 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      
-      - name: Install system dependencies for Chrome
+
+            - name: Install system dependencies for Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             chromium-browser \
             chromium-chromedriver \
             fonts-liberation \
-            libasound2 \
+            libasound2t64 \
             libatk-bridge2.0-0 \
             libatk1.0-0 \
             libc6 \
