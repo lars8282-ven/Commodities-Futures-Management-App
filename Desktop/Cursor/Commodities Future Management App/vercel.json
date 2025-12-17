@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "functions/daily_scraper.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/daily-scrape",
+      "dest": "functions/daily_scraper.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/daily-scrape",
+      "schedule": "0 18 * * *"
+    }
+  ]
+}
+

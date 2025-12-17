@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data
+data/cache/*
+data/backfill/*
+!data/backfill/.gitkeep
+
+# CSV exports (test data)
+*.csv
+
+# Virtual environments
+venv/
+env/
+ENV/
+commodities-futures-management-app/
+
+# Site packages (should not be committed)
+lib/site-packages/
+
+# Python cache
+*.pyc
+__pycache__/
+
+# IDE
+.cursor/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Test files and scripts (optional - comment out if you want to include)
+# debug_scraper.py
+# scrape_cme_dec12.py
+# test_scraper.py
+# run_*.ps1
+# start-*.ps1
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/credentials.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
