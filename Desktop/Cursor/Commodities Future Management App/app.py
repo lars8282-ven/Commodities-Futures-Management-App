@@ -23,9 +23,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Authentication check - restrict access to @tepuiv.com emails via OIDC
+# Authentication check - simple password protection
 if not check_authentication():
-    st.stop()  # Stop execution if not authenticated (login UI is shown by check_authentication)
+    st.stop()  # Stop execution if not authenticated (password form is shown by check_authentication)
 
 # Initialize session state
 if "db" not in st.session_state:

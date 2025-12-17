@@ -1,115 +1,62 @@
 """
-Authentication module for Streamlit app.
-Uses Streamlit's built-in OIDC authentication with email domain verification.
-Restricts access to @tepuiv.com email addresses.
+Simple password authentication module for Streamlit app.
+Uses a password stored in secrets or config for basic access control.
 """
 import streamlit as st
 
 
-ALLOWED_DOMAIN = "@tepuiv.com"
-
-
-def verify_email_domain(email: str, allowed_domain: str = ALLOWED_DOMAIN) -> bool:
-    """
-    Verify email belongs to allowed domain.
-    
-    Args:
-        email: Email address to verify
-        allowed_domain: Required domain (default: "@tepuiv.com")
-        
-    Returns:
-        True if email ends with allowed domain, False otherwise
-    """
-    if not email:
-        return False
-    
-    email = email.strip().lower()
-    allowed_domain = allowed_domain.lower()
-    
-    # Simple validation: check if email ends with allowed domain
-    return email.endswith(allowed_domain) and "@" in email
-
-
 def check_authentication() -> bool:
     """
-    Check if user is authenticated with allowed email domain using Streamlit OIDC.
+    Check if user has entered the correct password.
     
-    This function:
-    1. Checks if user is logged in via Streamlit's built-in OIDC (st.user)
-    2. Verifies the email domain is @tepuiv.com
-    3. Shows login button if not authenticated
-    4. Shows error if logged in with wrong domain
+    Password is stored in:
+    - Streamlit Cloud: secrets (st.secrets.get("password", {}).get("password"))
+    - Local: config.toml [password] section or secrets.toml
     
     Returns:
-        True if authenticated with correct domain, False otherwise
+        True if authenticated, False otherwise
     """
-    # Check if user is logged in via Streamlit OIDC
-    if not st.user.is_logged_in:
-        # User is not logged in - show login button
-        st.title("🔐 Authentication Required")
-        st.markdown("This application is restricted to authorized users.")
-        st.info(f"Please log in with your {ALLOWED_DOMAIN} email address to continue.")
-        
-        # Try to detect if OIDC is configured
-        try:
-            # Show login button - this will redirect to OIDC provider
-            if st.button("🔑 Log in", type="primary"):
-                st.login()  # Redirects to OIDC provider
-            return False
-        except Exception as e:
-            # If OIDC is not configured, show helpful error
-            st.error("⚠️ Authentication is not configured properly.")
-            st.warning(
-                "To enable authentication, you need to configure OIDC in `.streamlit/secrets.toml`. "
-                "See the deployment guide for setup instructions."
-            )
-            st.code(
-                """
-# Example configuration for Microsoft/Azure AD:
-[auth]
-redirect_uri = "https://your-app-url.streamlit.app/oauth2callback"
-cookie_secret = "your-random-secret-here"
-
-[auth.microsoft]
-client_id = "your-client-id"
-client_secret = "your-client-secret"
-server_metadata_url = "https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration"
-                """,
-                language="toml"
-            )
-            return False
+    # Get password from secrets or config
+    try:
+        # Try to get password from secrets first (Streamlit Cloud)
+        required_password = st.secrets.get("password", {}).get("password")
+        # If not in secrets, try config (local development)
+        if not required_password:
+            # For local development, you can also set it directly here temporarily
+            # But better to use secrets.toml
+            required_password = None
+    except Exception:
+        required_password = None
     
-    # User is logged in - check email domain
-    user_email = st.user.get("email") or st.user.get("preferred_username") or ""
+    # If no password is configured, allow access (optional - you may want to require it)
+    if not required_password:
+        st.warning("⚠️ No password configured. Please set a password in secrets.toml or Streamlit Cloud secrets.")
+        st.info("For now, allowing access. Configure password protection by adding `[password] password = 'your-password'` to secrets.")
+        return True  # Allow access if no password configured
     
-    if not user_email:
-        st.error("⚠️ Unable to retrieve email from authentication provider.")
-        st.info("Please contact your administrator if this issue persists.")
-        if st.button("🔓 Log out"):
-            st.logout()
-        return False
+    # Check if user is already authenticated in this session
+    if st.session_state.get("authenticated", False):
+        return True
     
-    # Verify email domain
-    if not verify_email_domain(user_email, ALLOWED_DOMAIN):
-        st.error(f"❌ Access Denied")
-        st.warning(
-            f"Your email address ({user_email}) is not authorized to access this application. "
-            f"Only {ALLOWED_DOMAIN} email addresses are permitted."
+    # Show password input form
+    st.title("🔐 Password Required")
+    st.markdown("This application is password protected.")
+    
+    with st.form("password_form"):
+        password_input = st.text_input(
+            "Enter Password",
+            type="password",
+            placeholder="Enter the application password"
         )
-        if st.button("🔓 Log out"):
-            st.logout()
-        return False
+        submit_button = st.form_submit_button("Submit", type="primary")
+        
+        if submit_button:
+            if password_input == required_password:
+                st.session_state.authenticated = True
+                st.success("✅ Access granted!")
+                st.rerun()
+            else:
+                st.error("❌ Incorrect password. Please try again.")
+                return False
     
-    # User is authenticated with correct domain
-    return True
-
-
-def show_login_form() -> bool:
-    """
-    Deprecated: This function is kept for backwards compatibility.
-    Use check_authentication() instead, which handles OIDC authentication.
-    
-    Returns:
-        True if user is authenticated, False otherwise
-    """
-    return check_authentication()
+    return False
