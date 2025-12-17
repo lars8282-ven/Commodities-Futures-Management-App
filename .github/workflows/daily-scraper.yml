@@ -65,7 +65,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r "Desktop/Cursor/Commodities Future Management App/requirements.txt"
       
       - name: Set Chrome binary path for Selenium
         run: |
@@ -79,6 +79,7 @@ jobs:
           CHROME_BIN: /usr/bin/chromium-browser
           CHROMEDRIVER_PATH: /usr/bin/chromedriver
         run: |
+          cd "Desktop/Cursor/Commodities Future Management App"
           python functions/daily_scraper.py
       
       - name: Upload logs on failure
