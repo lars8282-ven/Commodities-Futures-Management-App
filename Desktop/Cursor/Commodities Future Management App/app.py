@@ -229,13 +229,13 @@ if scrape_hh or scrape_both:
                 scraper._close_driver()
                 
                 if records:
-                # Extract date from first record
-                scrape_date = records[0].get("date", "unknown") if records else "unknown"
-                
-                # Save to database
-                result = save_futures_data(records)
-                
-                # Show save results
+                    # Extract date from first record
+                    scrape_date = records[0].get("date", "unknown") if records else "unknown"
+                    
+                    # Save to database
+                    result = save_futures_data(records)
+                    
+                    # Show save results
                 if result.get("saved", 0) > 0:
                     st.success(f"✅ Scraped {len(records)} HH contracts for {scrape_date}. Saved: {result['saved']}, Skipped: {result['skipped']}")
                 elif result.get("skipped", 0) == len(records):
