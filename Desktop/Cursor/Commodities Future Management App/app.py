@@ -186,32 +186,32 @@ if scrape_wti or scrape_both:
                 scraper._close_driver()
                 
                 if records:
-                # Extract date from first record
-                scrape_date = records[0].get("date", "unknown") if records else "unknown"
-                
-                # Save to database
-                result = save_futures_data(records)
-                
-                # Show save results
-                if result.get("saved", 0) > 0:
-                    st.success(f"✅ Scraped {len(records)} WTI contracts for {scrape_date}. Saved: {result['saved']}, Skipped: {result['skipped']}")
-                elif result.get("skipped", 0) == len(records):
-                    st.info(f"ℹ️ All {len(records)} WTI contracts for {scrape_date} already exist in database (skipped).")
+                    # Extract date from first record
+                    scrape_date = records[0].get("date", "unknown") if records else "unknown"
+                    
+                    # Save to database
+                    result = save_futures_data(records)
+                    
+                    # Show save results
+                    if result.get("saved", 0) > 0:
+                        st.success(f"✅ Scraped {len(records)} WTI contracts for {scrape_date}. Saved: {result['saved']}, Skipped: {result['skipped']}")
+                    elif result.get("skipped", 0) == len(records):
+                        st.info(f"ℹ️ All {len(records)} WTI contracts for {scrape_date} already exist in database (skipped).")
+                    else:
+                        st.warning(f"⚠️ Scraped {len(records)} WTI contracts for {scrape_date}, but only {result.get('saved', 0)} were saved. Skipped: {result.get('skipped', 0)}")
+                    
+                    # Show errors if any
+                    if result.get("errors"):
+                        with st.expander(f"⚠️ Database Errors ({result.get('error_count', 0)} errors)"):
+                            for error in result["errors"]:
+                                st.error(error)
+                            if result.get("error_count", 0) > len(result["errors"]):
+                                st.caption(f"... and {result.get('error_count', 0) - len(result['errors'])} more errors")
+                    
+                    st.rerun()
                 else:
-                    st.warning(f"⚠️ Scraped {len(records)} WTI contracts for {scrape_date}, but only {result.get('saved', 0)} were saved. Skipped: {result.get('skipped', 0)}")
-                
-                # Show errors if any
-                if result.get("errors"):
-                    with st.expander(f"⚠️ Database Errors ({result.get('error_count', 0)} errors)"):
-                        for error in result["errors"]:
-                            st.error(error)
-                        if result.get("error_count", 0) > len(result["errors"]):
-                            st.caption(f"... and {result.get('error_count', 0) - len(result['errors'])} more errors")
-                
-                st.rerun()
-            else:
-                st.warning("⚠️ No WTI data found. The table may be empty or the page may not have loaded correctly.")
-                st.info("💡 Check the terminal output for Selenium errors or network issues.")
+                    st.warning("⚠️ No WTI data found. The table may be empty or the page may not have loaded correctly.")
+                    st.info("💡 Check the terminal output for Selenium errors or network issues.")
             except Exception as e:
                 st.error(f"❌ Error scraping WTI: {e}")
                 st.exception(e)
@@ -251,9 +251,9 @@ if scrape_hh or scrape_both:
                         if result.get("error_count", 0) > len(result["errors"]):
                             st.caption(f"... and {result.get('error_count', 0) - len(result['errors'])} more errors")
                 
-                st.rerun()
-            else:
-                st.warning("⚠️ No HH data found. The table may be empty or the page may not have loaded correctly.")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ No HH data found. The table may be empty or the page may not have loaded correctly.")
                     st.info("💡 Check the terminal output for Selenium errors or network issues.")
             except Exception as e:
                 st.error(f"❌ Error scraping HH: {e}")
