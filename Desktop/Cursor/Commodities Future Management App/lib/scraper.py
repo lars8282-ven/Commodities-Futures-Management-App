@@ -51,10 +51,24 @@ class CMEScraper:
                 chrome_options.add_experimental_option('useAutomationExtension', False)
                 chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 
+                # Check for system Chrome/Chromium (GitHub Actions, Linux servers)
+                chrome_bin = os.getenv("CHROME_BIN")
+                chromedriver_path = os.getenv("CHROMEDRIVER_PATH")
+                
+                if chrome_bin and os.path.exists(chrome_bin):
+                    chrome_options.binary_location = chrome_bin
+                    print(f"Using Chrome binary at: {chrome_bin}")
+                
                 try:
-                    # Try using Selenium's built-in driver management first (Selenium 4.6+)
-                    # This is more reliable on Windows
-                    self.driver = webdriver.Chrome(options=chrome_options)
+                    # Try using system chromedriver if available (GitHub Actions)
+                    if chromedriver_path and os.path.exists(chromedriver_path):
+                        print(f"Using Chromedriver at: {chromedriver_path}")
+                        service = Service(chromedriver_path)
+                        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                    else:
+                        # Try using Selenium's built-in driver management first (Selenium 4.6+)
+                        # This is more reliable on Windows
+                        self.driver = webdriver.Chrome(options=chrome_options)
                 except Exception as driver_error1:
                     try:
                         # Fallback to webdriver-manager if built-in fails

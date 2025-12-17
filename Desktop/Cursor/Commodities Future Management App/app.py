@@ -36,8 +36,26 @@ if "db" not in st.session_state:
         st.info("Please check your .env file and ensure SUPABASE_URL and SUPABASE_KEY are set correctly.")
         st.stop()
 
-if "scraper" not in st.session_state:
-    st.session_state.scraper = CMEScraper(headless=True)
+# Scraper is now initialized lazily only when needed (for local use)
+# On Streamlit Cloud, scraping is handled by GitHub Actions daily job
+def get_scraper():
+    """
+    Get or create scraper instance (lazy initialization).
+    Only works locally - scraping on Streamlit Cloud is disabled.
+    """
+    if "scraper" not in st.session_state:
+        try:
+            # Only initialize locally, not on Streamlit Cloud
+            # Streamlit Cloud cannot run Selenium
+            st.session_state.scraper = CMEScraper(headless=True)
+        except Exception as e:
+            st.error(f"⚠️ Scraper not available: {e}")
+            st.info(
+                "💡 **Note:** Scraping is only available when running locally. "
+                "Data is automatically scraped daily via GitHub Actions scheduled job."
+            )
+            return None
+    return st.session_state.scraper
 
 if "available_dates_wti" not in st.session_state:
     st.session_state.available_dates_wti = None
@@ -47,7 +65,8 @@ if "available_dates_hh" not in st.session_state:
 
 # Title
 st.title("📊 CME Futures Settlement Data Scraper")
-st.markdown("Scrape WTI (Crude Oil) and HH (Natural Gas) futures settlement data from CME Group")
+st.markdown("View WTI (Crude Oil) and HH (Natural Gas) futures settlement data from CME Group")
+st.info("💡 **Note:** Data is automatically scraped daily via GitHub Actions. Manual scraping is only available when running locally.")
 
 # Sidebar
 st.sidebar.header("Scrape Settings")
@@ -55,14 +74,15 @@ st.sidebar.header("Scrape Settings")
 # Fetch available dates
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_available_dates_cached(commodity: str):
-    """Get available dates from CME (cached)."""
+    """Get available dates from CME (cached). Only works locally."""
     try:
         scraper = CMEScraper(headless=True)
         dates = scraper.get_available_dates(commodity)
         scraper._close_driver()
         return dates
     except Exception as e:
-        st.sidebar.error(f"Error fetching available dates: {e}")
+        # Silently fail - this is expected on Streamlit Cloud
+        # Users can still select dates manually
         return []
 
 # Buttons to refresh available dates
@@ -155,13 +175,17 @@ scrape_both = st.sidebar.button("Scrape Both", type="secondary", use_container_w
 
 # Main content area
 if scrape_wti or scrape_both:
-    with st.spinner("Scraping WTI data (using prior business day)..."):
-        try:
-            scraper = CMEScraper(headless=True)
-            records = scraper.scrape_wti()
-            scraper._close_driver()
-            
-            if records:
+    scraper = get_scraper()
+    if scraper is None:
+        st.error("❌ Scraping is not available on Streamlit Cloud. Data is automatically scraped daily via GitHub Actions.")
+        st.info("💡 To scrape manually, run the app locally. Otherwise, data will be updated automatically each day.")
+    else:
+        with st.spinner("Scraping WTI data (using prior business day)..."):
+            try:
+                records = scraper.scrape_wti()
+                scraper._close_driver()
+                
+                if records:
                 # Extract date from first record
                 scrape_date = records[0].get("date", "unknown") if records else "unknown"
                 
@@ -188,19 +212,23 @@ if scrape_wti or scrape_both:
             else:
                 st.warning("⚠️ No WTI data found. The table may be empty or the page may not have loaded correctly.")
                 st.info("💡 Check the terminal output for Selenium errors or network issues.")
-        except Exception as e:
-            st.error(f"❌ Error scraping WTI: {e}")
-            st.exception(e)
-            st.info("💡 Check the terminal output for detailed error messages.")
+            except Exception as e:
+                st.error(f"❌ Error scraping WTI: {e}")
+                st.exception(e)
+                st.info("💡 Check the terminal output for detailed error messages.")
 
 if scrape_hh or scrape_both:
-    with st.spinner("Scraping HH data (using prior business day)..."):
-        try:
-            scraper = CMEScraper(headless=True)
-            records = scraper.scrape_henry_hub()
-            scraper._close_driver()
-            
-            if records:
+    scraper = get_scraper()
+    if scraper is None:
+        st.error("❌ Scraping is not available on Streamlit Cloud. Data is automatically scraped daily via GitHub Actions.")
+        st.info("💡 To scrape manually, run the app locally. Otherwise, data will be updated automatically each day.")
+    else:
+        with st.spinner("Scraping HH data (using prior business day)..."):
+            try:
+                records = scraper.scrape_henry_hub()
+                scraper._close_driver()
+                
+                if records:
                 # Extract date from first record
                 scrape_date = records[0].get("date", "unknown") if records else "unknown"
                 
@@ -226,11 +254,11 @@ if scrape_hh or scrape_both:
                 st.rerun()
             else:
                 st.warning("⚠️ No HH data found. The table may be empty or the page may not have loaded correctly.")
-                st.info("💡 Check the terminal output for Selenium errors or network issues.")
-        except Exception as e:
-            st.error(f"❌ Error scraping HH: {e}")
-            st.exception(e)
-            st.info("💡 Check the terminal output for detailed error messages.")
+                    st.info("💡 Check the terminal output for Selenium errors or network issues.")
+            except Exception as e:
+                st.error(f"❌ Error scraping HH: {e}")
+                st.exception(e)
+                st.info("💡 Check the terminal output for detailed error messages.")
 
 # Display data tables
 st.header("📋 Data Tables")
