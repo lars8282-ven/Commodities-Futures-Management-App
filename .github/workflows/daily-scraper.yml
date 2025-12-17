@@ -21,8 +21,8 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-
-            - name: Install system dependencies for Chrome
+      
+      - name: Install system dependencies for Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -90,4 +90,3 @@ jobs:
             *.log
             logs/
           retention-days: 7
-
